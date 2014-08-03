@@ -9,14 +9,12 @@ class RegularizerBase(object):
     def _dr_dphi(self):
         return 0
 
-    def dr_dphi(self, plsa):
-        return call_ignore_extra_args(self._dr_dphi, plsa)
+    dr_dphi = call_ignore_extra_args(_dr_dphi)
 
     def _dr_dtheta(self):
         return 0
 
-    def dr_dtheta(self, plsa):
-        return call_ignore_extra_args(self._dr_dtheta, plsa)
+    dr_dtheta = call_ignore_extra_args(_dr_dtheta)
 
 
 class RegularizerCoefficientBase(object):
@@ -27,8 +25,7 @@ class RegularizerCoefficientBase(object):
     def _coefficient(self):
         return 0
 
-    def coefficient(self, plsa):
-        return call_ignore_extra_args(self._coefficient, plsa)
+    coefficient = call_ignore_extra_args(_coefficient)
 
     def __mul__(self, other):
         if isinstance(other, RegularizerBase):

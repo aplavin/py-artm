@@ -8,7 +8,11 @@ def normalize(mat):
     return mat / norms
 
 
-def call_ignore_extra_args(func, obj):
-    internal_argnames = set(inspect.getargspec(func).args) - {'self'}
-    internal_kwargs = {name: getattr(obj, name) for name in internal_argnames}
-    return func(**internal_kwargs)
+def call_ignore_extra_args(func_base):
+    def wrapper(self, obj, kwargs={}):
+        func = getattr(self, func_base.__name__)
+        internal_argnames = set(inspect.getargspec(func).args) - {'self'}
+        internal_kwargs = {name: (getattr(obj, name) if hasattr(obj, name) else kwargs[name])
+                           for name in internal_argnames}
+        return func(**internal_kwargs)
+    return wrapper

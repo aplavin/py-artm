@@ -9,5 +9,4 @@ class QuantityBase(object):
     def _items(self):
         return []
 
-    def items(self, plsa):
-        return call_ignore_extra_args(self._items, plsa)
+    items = call_ignore_extra_args(_items)
