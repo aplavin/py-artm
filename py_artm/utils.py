@@ -1,3 +1,5 @@
+import inspect
+
 
 def normalize(mat):
     """ Normalize columns so that each of them sum up to 1 """
