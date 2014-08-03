@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import numexpr as ne
-from ..plsa.quantity import QuantityBase
+from ..plsa import QuantityBase
 
 
 class Perplexity(QuantityBase):

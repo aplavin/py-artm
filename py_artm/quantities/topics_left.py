@@ -1,5 +1,5 @@
 import numpy as np
-from ..plsa.quantity import QuantityBase
+from ..plsa import QuantityBase
 
 
 class TopicsLeft(QuantityBase):
