@@ -26,5 +26,5 @@ setup(name='py-artm',
       author='Alexander Plavin',
       author_email='alexander@plav.in',
       license='MIT',
-      packages=['py_artm'],
+      packages=['py_artm', 'py_artm.plsa', 'py_artm.regularizers'],
       zip_safe=False)
