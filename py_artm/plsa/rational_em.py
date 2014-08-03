@@ -3,16 +3,24 @@ import math
 import numpy as np
 import numexpr as ne
 from ipy_progressbar import ProgressBar
+from .regularizer import RegularizerWithCoefficient
+from .quantity import QuantityBase
+from .stop_condition import StopConditionBase
 from ..utils import normalize
 
 
 class PlsaEmRational(object):
-    def __init__(self, nwd, T_init, regularizers, quantities):
+    def __init__(self, nwd, T_init, modifiers):
         self.nwd = nwd
         self.W, self.D = self.nwd.shape
         self.T_init = T_init
-        self.regularizers = regularizers
-        self.quantities = quantities
+
+        def type_checker(t):
+            return lambda obj: isinstance(obj, t)
+        self.regularizers = filter(type_checker(RegularizerWithCoefficient), modifiers)
+        self.quantities = filter(type_checker(QuantityBase), modifiers)
+        self.stop_conditions = filter(type_checker(StopConditionBase), modifiers)
+
         self.progress = []
 
     def generate_initial(self):
@@ -75,5 +83,8 @@ class PlsaEmRational(object):
                 pb.set_extra_text('; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_items[2:]]))
                 if not quiet:
                     print '; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_items])
+
+                if any(sc.is_stop(self, dict(progress_items)) for sc in self.stop_conditions):
+                    break
         except KeyboardInterrupt:
             print '<Interrupted>'
