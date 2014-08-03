@@ -1,10 +1,12 @@
+from time import time
+import math
 import numpy as np
 import numexpr as ne
 from ipy_progressbar import ProgressBar
 from ..utils import normalize
 
 
-class PLSA_EM(object):
+class PlsaEmRational(object):
     def __init__(self, nwd, T_init, regularizers):
         self.nwd = nwd
         self.W, self.D = self.nwd.shape
@@ -35,12 +37,12 @@ class PLSA_EM(object):
 
         ne.evaluate('where(nwd * pwd > 0, nwd / pwd, 0)', out=self.npwd, local_dict={'nwd': self.nwd, 'pwd': self.pwd})
 
-        dr_dphi = sum(reg.tau(self) * reg.dr_dphi(self) for reg in self.regularizers)
+        dr_dphi = self.regularizers.dr_dphi(self)
 
         np.dot(self.npwd, self.theta.T, out=self.phi_sized)
         self.phi_new = self.phi * np.clip(self.phi_sized + dr_dphi, 0, float('inf'))
 
-        dr_dtheta = sum(reg.tau(self) * reg.dr_dtheta(self) for reg in self.regularizers)
+        dr_dtheta = self.regularizers.dr_dtheta(self)
 
         np.dot(self.phi.T, self.npwd, out=self.theta_sized)
         self.theta_new = self.theta * np.clip(self.theta_sized + dr_dtheta, 0, float('inf'))
@@ -68,7 +70,7 @@ class PLSA_EM(object):
                     ('iteration', self.itnum),
                     ('time', end_time - start_time),
                     ('perplexity', perp),
-                ] + [pv for reg in self.regularizers for pv in reg.progress(self)]
+                ]# + [pv for reg in self.regularizers for pv in reg.progress(self)]
                 self.progress.append(progress_values)
 
                 pb.set_extra_text('; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_values[2:]]))
@@ -80,7 +82,13 @@ class PLSA_EM(object):
             print '<Interrupted>'
 
     def perplexity(self):
-        ne.evaluate('nwd * (nwdv * b - a)', local_dict={'nwd': nwd, 'a': np.float32(87.989971088), 'b': np.float32(8.2629582881927490e-8), 'nwdv': nwd.view(np.int32)}, out=nwd, casting='unsafe')
+        s = np.einsum('ij -> ',
+                      ne.evaluate('nwd * (nwdv * b - a)',
+                                  local_dict={'nwd': self.nwd,
+                                              'a': np.float32(87.989971088),
+                                              'b': np.float32(8.2629582881927490e-8),
+                                              'nwdv': self.nwd.view(np.int32)},
+                                  casting='unsafe'))
 #         s = perplexity_internal_cython(self.nwd.size, self.pwd, self.nwd)
         # TODO: check if smth like mat[self.nwd == 0] = 0 is needed
         return math.exp(-1/self.n * s)
