@@ -51,22 +51,3 @@ class RegularizerWithCoefficient(object):
         base_val = self.regularizer.dr_dtheta(plsa)
         coeff = self.coefficient.coefficient(plsa)
         return coeff * base_val
-
-
-class RegularizersCombination(object):
-
-    def __init__(self, *regularizers):
-        self.regularizers = regularizers
-
-    def dr_dphi(self, plsa):
-        return sum(reg.dr_dphi(plsa) for reg in self.regularizers)
-
-    def dr_dtheta(self, plsa):
-        return sum(reg.dr_dtheta(plsa) for reg in self.regularizers)
-
-    def __add__(self, other):
-        if isinstance(other, RegularizerWithCoefficient):
-            return RegularizersCombination(*(self.regularizers + (other,)))
-        raise NotImplemented
-
-    __radd__ = __add__

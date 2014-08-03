@@ -37,12 +37,12 @@ class PlsaEmRational(object):
 
         ne.evaluate('where(nwd * pwd > 0, nwd / pwd, 0)', out=self.npwd, local_dict={'nwd': self.nwd, 'pwd': self.pwd})
 
-        dr_dphi = self.regularizers.dr_dphi(self)
+        dr_dphi = sum(reg.dr_dphi(self) for reg in self.regularizers)
 
         np.dot(self.npwd, self.theta.T, out=self.phi_sized)
         self.phi_new = self.phi * np.clip(self.phi_sized + dr_dphi, 0, float('inf'))
 
-        dr_dtheta = self.regularizers.dr_dtheta(self)
+        dr_dtheta = sum(reg.dr_dtheta(self) for reg in self.regularizers)
 
         np.dot(self.phi.T, self.npwd, out=self.theta_sized)
         self.theta_new = self.theta * np.clip(self.theta_sized + dr_dtheta, 0, float('inf'))
