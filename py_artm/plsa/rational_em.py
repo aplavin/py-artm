@@ -7,11 +7,12 @@ from ..utils import normalize
 
 
 class PlsaEmRational(object):
-    def __init__(self, nwd, T_init, regularizers):
+    def __init__(self, nwd, T_init, regularizers, quantities):
         self.nwd = nwd
         self.W, self.D = self.nwd.shape
         self.T_init = T_init
         self.regularizers = regularizers
+        self.quantities = quantities
         self.progress = []
 
     def generate_initial(self):
@@ -63,32 +64,16 @@ class PlsaEmRational(object):
             for self.itnum in pb:
                 start_time = time()
                 self.iteration()
-                perp = self.perplexity()
                 end_time = time()
 
-                progress_values = [
+                progress_items = [
                     ('iteration', self.itnum),
                     ('time', end_time - start_time),
-                    ('perplexity', perp),
-                ]# + [pv for reg in self.regularizers for pv in reg.progress(self)]
-                self.progress.append(progress_values)
+                ] + [(k, v) for q in self.quantities for k, v in q.items(self)]
+                self.progress.append(progress_items)
 
-                pb.set_extra_text('; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_values[2:]]))
+                pb.set_extra_text('; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_items[2:]]))
                 if not quiet:
-                    print '; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_values])
-                if perp == float('inf'):
-                    break
+                    print '; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_items])
         except KeyboardInterrupt:
             print '<Interrupted>'
-
-    def perplexity(self):
-        s = np.einsum('ij -> ',
-                      ne.evaluate('nwd * (nwdv * b - a)',
-                                  local_dict={'nwd': self.nwd,
-                                              'a': np.float32(87.989971088),
-                                              'b': np.float32(8.2629582881927490e-8),
-                                              'nwdv': self.nwd.view(np.int32)},
-                                  casting='unsafe'))
-#         s = perplexity_internal_cython(self.nwd.size, self.pwd, self.nwd)
-        # TODO: check if smth like mat[self.nwd == 0] = 0 is needed
-        return math.exp(-1/self.n * s)
