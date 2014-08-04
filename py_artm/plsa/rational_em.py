@@ -11,11 +11,11 @@ from ..utils import normalize
 
 """
 ### Non-matrix form
-* обнулить $n_{wt}, n_{dt}, n_{t}$
-* для всех $d, w$:
+* zero all $n_{wt}, n_{dt}, n_{t}$
+* for all $d, w$:
   * $Z = \sum_t \phi_{wt} \theta_{td}$
-  * для всех $t$:
-    * увеличить $n_{wt}, n_{dt}, n_{t}$ на $\delta = n_{dw} \phi_{wt} \theta_{td} / Z$
+  * for all $t$:
+    * increase $n_{wt}, n_{dt}, n_{t}$ by $\delta = n_{dw} \phi_{wt} \theta_{td} / Z$
 * $\phi_{wt} \propto \left( n_{wt} + \phi_{wt} \frac{\partial R}{\partial \phi_{wt}} \right)_+$
 * $\theta_{td} \propto \left( n_{dt} + \theta_{td} \frac{\partial R}{\partial \theta_{td}} \right)_+$
 
