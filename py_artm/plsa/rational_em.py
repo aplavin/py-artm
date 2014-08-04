@@ -6,7 +6,7 @@ from ipy_progressbar import ProgressBar
 from .regularizer import RegularizerWithCoefficient
 from .quantity import QuantityBase
 from .stop_condition import StopConditionBase
-from ..utils import normalize
+from ..utils import normalize, public
 
 
 """
@@ -28,7 +28,7 @@ from ..utils import normalize
 * $\Theta_{td} \propto \left( N_{td} + \Theta_{td} \cdot \frac{\partial R}{\partial \Theta_{td}} \right)_+ = \Theta_{td} \cdot \left( \Phi_{wt}^T P'_{wd} + \frac{\partial R}{\partial \Theta_{td}} \right)_+$
 """
 
-
+@public
 class PlsaEmRational(object):
     def __init__(self, nwd, T_init, modifiers):
         self.nwd = nwd

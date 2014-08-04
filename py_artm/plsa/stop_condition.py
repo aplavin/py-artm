@@ -1,4 +1,4 @@
-from ..utils import call_ignore_extra_args
+from ..utils import call_ignore_extra_args, public
 
 
 class StopConditionBase(object):

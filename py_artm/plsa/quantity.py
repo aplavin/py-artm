@@ -1,6 +1,7 @@
-from ..utils import call_ignore_extra_args
+from ..utils import call_ignore_extra_args, public
 
 
+@public
 class QuantityBase(object):
 
     def __init__(self):

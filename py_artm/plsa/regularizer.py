@@ -1,6 +1,7 @@
-from ..utils import call_ignore_extra_args
+from ..utils import call_ignore_extra_args, public
 
 
+@public
 class RegularizerBase(object):
 
     def __init__(self):
@@ -17,6 +18,7 @@ class RegularizerBase(object):
     dr_dtheta = call_ignore_extra_args(_dr_dtheta)
 
 
+@public
 class RegularizerCoefficientBase(object):
 
     def __init__(self):
@@ -33,6 +35,7 @@ class RegularizerCoefficientBase(object):
         raise NotImplemented
 
 
+@public
 class RegularizerWithCoefficient(object):
 
     def __init__(self, regularizer, coefficient):
