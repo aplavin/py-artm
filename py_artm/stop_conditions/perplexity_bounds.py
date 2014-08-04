@@ -1,6 +1,8 @@
 from ..plsa import StopConditionBase
+from ..utils import public
 
 
+@public
 class PerplexityBounds(StopConditionBase):
 
     def __init__(self, lo=float('-inf'), hi=float('inf')):
