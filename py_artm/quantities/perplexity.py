@@ -2,8 +2,10 @@ import math
 import numpy as np
 import numexpr as ne
 from ..plsa import QuantityBase
+from ..utils import public
 
 
+@public
 class Perplexity(QuantityBase):
 
     def __init__(self, exact=False):
@@ -20,6 +22,5 @@ class Perplexity(QuantityBase):
                                     'pwd_i': pwd.view(np.int32)},
                         casting='unsafe')
             s = np.einsum('ij -> ', mat)
-            # s = perplexity_internal_cython(nwd.size, pwd, nwd)
-        # TODO: check if smth like mat[self.nwd == 0] = 0 is needed
+
         yield ('perplexity', math.exp(-1/n * s))

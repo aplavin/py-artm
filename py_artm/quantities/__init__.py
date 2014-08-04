@@ -1,2 +1,2 @@
-from .perplexity import Perplexity
-from .topics_left import TopicsLeft
+from .perplexity import *
+from .topics_left import *
