@@ -9,6 +9,26 @@ from .stop_condition import StopConditionBase
 from ..utils import normalize
 
 
+"""
+### Non-matrix form
+* обнулить $n_{wt}, n_{dt}, n_{t}$
+* для всех $d, w$:
+  * $Z = \sum_t \phi_{wt} \theta_{td}$
+  * для всех $t$:
+    * увеличить $n_{wt}, n_{dt}, n_{t}$ на $\delta = n_{dw} \phi_{wt} \theta_{td} / Z$
+* $\phi_{wt} \propto \left( n_{wt} + \phi_{wt} \frac{\partial R}{\partial \phi_{wt}} \right)_+$
+* $\theta_{td} \propto \left( n_{dt} + \theta_{td} \frac{\partial R}{\partial \theta_{td}} \right)_+$
+
+### Matrix form
+* $P_{wd} = \Phi_{wt} \Theta_{td}$
+* $P'_{wd} = N_{wd} / P_{wd}$
+* $N_{wt} = \Phi_{wt} \cdot P'_{wd} \Theta_{td}^T$
+* $N_{td} = \Theta_{td} \cdot \Phi_{wt}^T P'_{wd}$
+* $\Phi_{wt} \propto \left( N_{wt} + \Phi_{wt} \cdot \frac{\partial R}{\partial \Phi_{wt}} \right)_+ = \Phi_{wt} \cdot \left( P'_{wd} \Theta_{td}^T + \frac{\partial R}{\partial \Phi_{wt}} \right)_+$
+* $\Theta_{td} \propto \left( N_{td} + \Theta_{td} \cdot \frac{\partial R}{\partial \Theta_{td}} \right)_+ = \Theta_{td} \cdot \left( \Phi_{wt}^T P'_{wd} + \frac{\partial R}{\partial \Theta_{td}} \right)_+$
+"""
+
+
 class PlsaEmRational(object):
     def __init__(self, nwd, T_init, modifiers):
         self.nwd = nwd
