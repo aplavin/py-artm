@@ -1,5 +1,5 @@
-from ..plsa import RegularizerCoefficientBase
-from ..utils import public
+from ...plsa import RegularizerCoefficientBase
+from ...utils import public
 
 
 @public
