@@ -71,7 +71,7 @@ class PlsaEmRational(object):
         np.dot(self.npwd, self.theta.T, out=self.phi_sized)
         self.phi_new = self.phi * np.clip(self.phi_sized + dr_dphi, 0, float('inf'))
 
-        dr_dtheta = sum(reg.dr_dtheta(self) for reg in self.regularizers)
+        dr_dtheta = 1.0 * self.n / self.D * sum(reg.dr_dtheta(self) for reg in self.regularizers)
 
         np.dot(self.phi.T, self.npwd, out=self.theta_sized)
         self.theta_new = self.theta * np.clip(self.theta_sized + dr_dtheta, 0, float('inf'))
