@@ -1,5 +1,4 @@
 from time import time
-import math
 import numpy as np
 import numexpr as ne
 from ipy_progressbar import ProgressBar
@@ -57,8 +56,6 @@ class PlsaEmRational(object):
         # preallocate arrays once
         self.pwd = np.empty_like(self.nwd)
         self.npwd = np.empty_like(self.nwd)
-        self.phi_sized = np.empty_like(self.phi)
-        self.theta_sized = np.empty_like(self.theta)
 
     def iteration(self):
         if self.itnum == 0:
@@ -68,12 +65,12 @@ class PlsaEmRational(object):
 
         dr_dphi = sum(reg.dr_dphi(self) for reg in self.regularizers)
 
-        np.dot(self.npwd, self.theta.T, out=self.phi_sized)
+        self.phi_sized = np.dot(self.npwd, self.theta.T)
         self.phi_new = self.phi * np.clip(self.phi_sized + dr_dphi, 0, float('inf'))
 
         dr_dtheta = 1.0 * self.n / self.D * sum(reg.dr_dtheta(self) for reg in self.regularizers)
 
-        np.dot(self.phi.T, self.npwd, out=self.theta_sized)
+        self.theta_sized = np.dot(self.phi.T, self.npwd)
         self.theta_new = self.theta * np.clip(self.theta_sized + dr_dtheta, 0, float('inf'))
 
         self.phi = normalize(self.phi_new)
