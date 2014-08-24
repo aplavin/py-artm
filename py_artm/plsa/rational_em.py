@@ -73,6 +73,11 @@ class PlsaEmRational(object):
         self.theta_sized = np.dot(self.phi.T, self.npwd)
         self.theta_new = self.theta * np.clip(self.theta_sized + dr_dtheta, 0, float('inf'))
 
+        nonzero_t = ~np.all(self.theta_new == 0, axis=1)
+        if nonzero_t.sum() < self.theta.shape[0] / 1.1:
+            self.phi_new = self.phi_new[:, nonzero_t]
+            self.theta_new = self.theta_new[nonzero_t, :]
+
         self.phi = normalize(self.phi_new)
         self.theta = normalize(self.theta_new)
 
