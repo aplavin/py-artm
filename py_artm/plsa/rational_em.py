@@ -45,10 +45,10 @@ class PlsaEmRational(object):
 
     def generate_initial(self):
         self.phi = np.random.random((self.W, self.T_init)).astype(np.float32)
-        self.phi = normalize(self.phi)
+        normalize(self.phi)
 
         self.theta = np.random.random((self.T_init, self.D)).astype(np.float32)
-        self.theta = normalize(self.theta)
+        normalize(self.theta)
 
         self.nd = self.nwd.sum(0)
         self.nw = self.nwd.sum(1)
