@@ -1,4 +1,5 @@
 from ..utils import call_ignore_extra_args, public
+from .quantity import QuantityBase
 
 
 @public
@@ -36,7 +37,7 @@ class RegularizerCoefficientBase(object):
 
 
 @public
-class RegularizerWithCoefficient(object):
+class RegularizerWithCoefficient(QuantityBase):
 
     def __init__(self, regularizer, coefficient):
         self.regularizer = regularizer
@@ -51,3 +52,7 @@ class RegularizerWithCoefficient(object):
         base_val = self.regularizer.dr_dtheta(plsa)
         coeff = self.coefficient.coefficient(plsa)
         return coeff * base_val
+
+    def items(self, plsa):
+        coeff = self.coefficient.coefficient(plsa)
+        yield ('coeff_%s' % self.regularizer.__class__.__name__, coeff)
