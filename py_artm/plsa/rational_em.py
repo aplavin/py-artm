@@ -60,6 +60,7 @@ class PlsaEmRational(object):
         normalize(self.phi)
 
         self.theta = np.random.random((self.T_init, self.D)).astype(np.float32)
+        self.theta = np.asfortranarray(self.theta)
         normalize(self.theta)
 
         self.nd = np.squeeze(np.array(self.nwd.sum(0)))
@@ -111,7 +112,7 @@ class PlsaEmRational(object):
             self.theta_new = self.theta_new[nonzero_t, :]
 
         self.phi = normalize(self.phi_new)
-        self.theta = normalize(self.theta_new)
+        self.theta = np.asfortranarray(normalize(self.theta_new))
 
         np.putmask(self.phi, self.phi < 1e-18, 0)
         np.putmask(self.theta, self.theta < 1e-18, 0)
