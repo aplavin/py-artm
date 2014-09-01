@@ -1,5 +1,6 @@
 from time import time
 import numpy as np
+import scipy.sparse
 import numexpr as ne
 from ipy_progressbar import ProgressBar
 from .regularizer import RegularizerWithCoefficient
@@ -7,9 +8,14 @@ from .quantity import QuantityBase
 from .stop_condition import StopConditionBase
 from ..utils import normalize, public
 
+import pyximport
+pyximport.install()
+import cython_support
+
 
 @public
 class PlsaEmRational(object):
+
     """
     ### Non-matrix form
     * zero all $n_{wt}, n_{dt}, n_{t}$
@@ -33,6 +39,7 @@ class PlsaEmRational(object):
         self.nwd = nwd
         self.W, self.D = self.nwd.shape
         self.T_init = T_init
+        self.issparse = scipy.sparse.issparse(self.nwd)
 
         def type_checker(t):
             return lambda obj: isinstance(obj, t)
@@ -49,28 +56,47 @@ class PlsaEmRational(object):
         self.theta = np.random.random((self.T_init, self.D)).astype(np.float32)
         normalize(self.theta)
 
-        self.nd = self.nwd.sum(0)
-        self.nw = self.nwd.sum(1)
+        self.nd = np.squeeze(np.array(self.nwd.sum(0)))
+        self.nw = np.squeeze(np.array(self.nwd.sum(1)))
         self.n = self.nwd.sum()
 
         # preallocate arrays once
-        self.pwd = np.empty_like(self.nwd)
-        self.npwd = np.empty_like(self.nwd)
+        if not self.issparse:
+            self.pwd = np.empty_like(self.nwd)
+            self.npwd = np.empty_like(self.nwd)
+        else:
+            self.pwd = None
+            self.npwd = None
+
+    def calc_multipliers(self):
+        if not self.issparse:
+            ne.evaluate('where(nwd * pwd > 0, nwd / pwd, 0)', out=self.npwd, local_dict={'nwd': self.nwd, 'pwd': self.pwd})
+            self.phi_sized = np.dot(self.npwd, self.theta.T)
+            self.theta_sized = np.dot(self.phi.T, self.npwd)
+        else:
+            self.phi_sized = np.empty_like(self.phi)
+            self.theta_sized = np.empty_like(self.theta)
+            cython_support.calc_nwt(
+                nwd=self.nwd,
+                phi=self.phi,
+                theta=self.theta,
+                nwt_out=self.phi_sized)
+            cython_support.calc_ntd(
+                ndw=self.nwd.T,
+                phi=self.phi,
+                theta=self.theta,
+                ntd_out=self.theta_sized)
 
     def iteration(self):
-        if self.itnum == 0:
+        if not self.issparse and self.itnum == 0:
             np.dot(self.phi, self.theta, out=self.pwd)
 
-        ne.evaluate('where(nwd * pwd > 0, nwd / pwd, 0)', out=self.npwd, local_dict={'nwd': self.nwd, 'pwd': self.pwd})
+        self.calc_multipliers()
 
         dr_dphi = sum(reg.dr_dphi(self) for reg in self.regularizers)
-
-        self.phi_sized = np.dot(self.npwd, self.theta.T)
         self.phi_new = self.phi * np.clip(self.phi_sized + dr_dphi, 0, float('inf'))
 
         dr_dtheta = 1.0 * self.n / self.D * sum(reg.dr_dtheta(self) for reg in self.regularizers)
-
-        self.theta_sized = np.dot(self.phi.T, self.npwd)
         self.theta_new = self.theta * np.clip(self.theta_sized + dr_dtheta, 0, float('inf'))
 
         nonzero_t = ~np.all(self.theta_new == 0, axis=1)
@@ -83,7 +109,9 @@ class PlsaEmRational(object):
 
         np.putmask(self.phi, self.phi < 1e-18, 0)
         np.putmask(self.theta, self.theta < 1e-18, 0)
-        np.dot(self.phi, self.theta, out=self.pwd)
+
+        if not self.issparse:
+            np.dot(self.phi, self.theta, out=self.pwd)
 
     def iterate(self, maxiter, quiet=False):
         self.maxiter = maxiter
