@@ -1,7 +1,6 @@
 #cython: boundscheck=False, wraparound=False, embedsignature=True, cdivision=True
 import numpy as np
 cimport numpy as np
-from cython.parallel import prange
 
 
 cdef extern from "mkl.h" nogil:
