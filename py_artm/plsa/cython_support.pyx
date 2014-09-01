@@ -16,15 +16,13 @@ cdef extern from "mkl.h" nogil:
 
 
 def calc_nwt(nwd,
-             np.ndarray[np.float32_t, ndim=2] phi,
-             np.ndarray[np.float32_t, ndim=2] theta,
-             np.ndarray[np.float32_t, ndim=2] nwt_out):
+             float[:, ::1] phi,
+             float[::1, :] theta,
+             float[:, ::1] nwt_out):
     nwd = nwd.tocsr()
-    cdef np.ndarray[np.int32_t, ndim=1] nwd_indptr = nwd.indptr
-    cdef np.ndarray[np.int32_t, ndim=1] nwd_indices = nwd.indices
-    cdef np.ndarray[np.float32_t, ndim=1] nwd_data = nwd.data
-
-    theta = np.asfortranarray(theta)
+    cdef int[:] nwd_indptr = nwd.indptr
+    cdef int[:] nwd_indices = nwd.indices
+    cdef float[:] nwd_data = nwd.data
 
     cdef int W = phi.shape[0]
     cdef int T = phi.shape[1]
@@ -50,15 +48,13 @@ def calc_nwt(nwd,
 
 
 def calc_ntd(ndw,
-             np.ndarray[np.float32_t, ndim=2] phi,
-             np.ndarray[np.float32_t, ndim=2] theta,
-             np.ndarray[np.float32_t, ndim=2] ntd_out):
+             float[:, ::1] phi,
+             float[::1, :] theta,
+             float[::1, :] ntd_out):
     ndw = ndw.tocsr()
-    cdef np.ndarray[np.int32_t, ndim=1] ndw_indptr = ndw.indptr
-    cdef np.ndarray[np.int32_t, ndim=1] ndw_indices = ndw.indices
-    cdef np.ndarray[np.float32_t, ndim=1] ndw_data = ndw.data
-
-    theta = np.asfortranarray(theta)
+    cdef int[:] ndw_indptr = ndw.indptr
+    cdef int[:] ndw_indices = ndw.indices
+    cdef float[:] ndw_data = ndw.data
 
     cdef int W = phi.shape[0]
     cdef int T = phi.shape[1]
@@ -77,12 +73,7 @@ def calc_ntd(ndw,
 
         for i in range(i_0, i_1):
             w = ndw_indices[i]
-#             pwd_val = 0
-#             for t in range(T):
-#                 pwd_val += phi[w, t] * theta[t, d]
             pwd_val = cblas_sdot(T, &phi[w, 0], 1, &theta[0, d], 1)
             if pwd_val == 0:
                 continue
-#             for t in range(T):
-#                 ntd_out[t, d] += ndw_data[i] * phi[w, t] / pwd_val
             cblas_saxpy(T, ndw_data[i] / pwd_val, &phi[w, 0], 1, &ntd_out[0, d], 1)
