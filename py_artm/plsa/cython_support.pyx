@@ -4,6 +4,17 @@ cimport numpy as np
 from cython.parallel import prange
 
 
+cdef extern from "mkl.h" nogil:
+    float cblas_sdot(int size,
+                     float *x, int xstride,
+                     float *y, int ystride)
+
+    void cblas_saxpy(int size,
+                     float alpha,
+                     float *x, int xstride,
+                     float *y, int ystride)
+
+
 def calc_nwt(nwd,
              np.ndarray[np.float32_t, ndim=2] phi,
              np.ndarray[np.float32_t, ndim=2] theta,
@@ -21,7 +32,7 @@ def calc_nwt(nwd,
 
     cdef int w, t, i, d
     cdef int i_0, i_1
-    cdef np.float32_t pwd_val
+    cdef float pwd_val
 
     for w in range(W):
         i_0 = nwd_indptr[w]
@@ -32,13 +43,10 @@ def calc_nwt(nwd,
 
         for i in range(i_0, i_1):
             d = nwd_indices[i]
-            pwd_val = 0
-            for t in range(T):
-                pwd_val += phi[w, t] * theta[t, d]
+            pwd_val = cblas_sdot(T, &phi[w, 0], 1, &theta[0, d], 1)
             if pwd_val == 0:
                 continue
-            for t in range(T):
-                nwt_out[w, t] += nwd_data[i] * theta[t, d] / pwd_val
+            cblas_saxpy(T, nwd_data[i] / pwd_val, &theta[0, d], 1, &nwt_out[w, 0], 1)
 
 
 def calc_ntd(ndw,
@@ -58,7 +66,7 @@ def calc_ntd(ndw,
 
     cdef int w, t, i, d
     cdef int i_0, i_1
-    cdef np.float32_t pwd_val
+    cdef float pwd_val
 
     for d in range(D):
         i_0 = ndw_indptr[d]
@@ -69,10 +77,12 @@ def calc_ntd(ndw,
 
         for i in range(i_0, i_1):
             w = ndw_indices[i]
-            pwd_val = 0
-            for t in range(T):
-                pwd_val += phi[w, t] * theta[t, d]
+#             pwd_val = 0
+#             for t in range(T):
+#                 pwd_val += phi[w, t] * theta[t, d]
+            pwd_val = cblas_sdot(T, &phi[w, 0], 1, &theta[0, d], 1)
             if pwd_val == 0:
                 continue
-            for t in range(T):
-                ntd_out[t, d] += ndw_data[i] * phi[w, t] / pwd_val
+#             for t in range(T):
+#                 ntd_out[t, d] += ndw_data[i] * phi[w, t] / pwd_val
+            cblas_saxpy(T, ndw_data[i] / pwd_val, &phi[w, 0], 1, &ntd_out[0, d], 1)
