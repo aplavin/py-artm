@@ -5,7 +5,13 @@ from ..plsa import QuantityBase
 from ..utils import public
 
 import pyximport
-pyximport.install()
+pyximport.install(
+    setup_args={
+        'include_dirs': [np.get_include(), '/opt/intel/composer_xe_2015.0.090/mkl/include'],
+        'libraries': ['mkl_intel_lp64', 'mkl_core', 'mkl_intel_thread', 'pthread'],
+        'library_dirs': ['/opt/intel/composer_xe_2015.0.090/mkl/lib/intel64'],
+    }
+)
 import perplexity_cython
 
 
