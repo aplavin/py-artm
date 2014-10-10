@@ -3,61 +3,69 @@ import numpy as np
 import ctypes as c
 import scipy.sparse
 import numexpr as ne
+import warnings
 from ipy_progressbar import ProgressBar
 from .regularizer import RegularizerWithCoefficient
 from .quantity import QuantityBase
 from .stop_condition import StopConditionBase
 from ..utils import normalize, public
 
-import pyximport
-pyximport.install(
-    setup_args={
-        'include_dirs': [np.get_include(), '/opt/intel/composer_xe_2015.0.090/mkl/include'],
-        'libraries': [('mkl_rt', {}), ('mkl_intel_lp64', {}), ('mkl_core', {}), ('mkl_intel_thread', {}), ('pthread', {}), ('iomp5', {})],
-        'library_dirs': ['/opt/intel/composer_xe_2015.0.090/mkl/lib/intel64'],
-    }
-)
-import cython_support
+try:
+    import pyximport
+    pyximport.install(
+        setup_args={
+            'include_dirs': [np.get_include(), '/opt/intel/composer_xe_2015.0.090/mkl/include'],
+            'libraries': [('mkl_rt', {}), ('mkl_intel_lp64', {}), ('mkl_core', {}), ('mkl_intel_thread', {}), ('pthread', {}), ('iomp5', {})],
+            'library_dirs': ['/opt/intel/composer_xe_2015.0.090/mkl/lib/intel64'],
+        }
+    )
+    import cython_support
+except ImportError:
+    warnings.warn('Could not import MKL-based code, computations with sparse matrices are disabled.')
 
-mkl = c.cdll.LoadLibrary("libmkl_rt.so")
 
+try:
+    mkl = c.cdll.LoadLibrary("libmkl_rt.so")
+except OSError:
+    warnings.warn('Could not import MKL, using dot() from numpy.')
+    dot = np.dot
+else:
+    def dot(A, B, C=None):
+        assert A.shape[1] == B.shape[0]
+        if C is None:
+            C = np.empty((A.shape[0], B.shape[1]), dtype=np.float32)
 
-def dot(A, B, C=None):
-    assert A.shape[1] == B.shape[0]
-    if C is None:
-        C = np.empty((A.shape[0], B.shape[1]), dtype=np.float32)
+        Order = 101  # 101 for row-major, 102 for column major data structures
+        alpha = 1
+        beta = 0
 
-    Order = 101  # 101 for row-major, 102 for column major data structures
-    alpha = 1
-    beta = 0
+        m = A.shape[0]
+        k = A.shape[1]
+        n = B.shape[1]
+        ldc = n
 
-    m = A.shape[0]
-    k = A.shape[1]
-    n = B.shape[1]
-    ldc = n
+        if A.flags.c_contiguous:
+            TransA = 111 # 111 for no transpose, 112 for transpose, and 113 for conjugate transpose
+            lda = k
+        elif A.flags.f_contiguous:
+            TransA = 112
+            lda = m
 
-    if A.flags.c_contiguous:
-        TransA = 111 # 111 for no transpose, 112 for transpose, and 113 for conjugate transpose
-        lda = k
-    elif A.flags.f_contiguous:
-        TransA = 112
-        lda = m
+        if B.flags.c_contiguous:
+            TransB = 111 # 111 for no transpose, 112 for transpose, and 113 for conjugate transpose
+            ldb = n
+        elif B.flags.f_contiguous:
+            TransB = 112
+            ldb = k
 
-    if B.flags.c_contiguous:
-        TransB = 111 # 111 for no transpose, 112 for transpose, and 113 for conjugate transpose
-        ldb = n
-    elif B.flags.f_contiguous:
-        TransB = 112
-        ldb = k
-
-    mkl.cblas_sgemm( c.c_int(Order), c.c_int(TransA), c.c_int(TransB),
-                     c.c_int(m), c.c_int(n), c.c_int(k),
-                     c.c_float(alpha),
-                     A.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(lda),
-                     B.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(ldb),
-                     c.c_float(beta),
-                     C.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(ldc) )
-    return C
+        mkl.cblas_sgemm( c.c_int(Order), c.c_int(TransA), c.c_int(TransB),
+                         c.c_int(m), c.c_int(n), c.c_int(k),
+                         c.c_float(alpha),
+                         A.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(lda),
+                         B.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(ldb),
+                         c.c_float(beta),
+                         C.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(ldc) )
+        return C
 
 
 @public
@@ -137,7 +145,7 @@ class PlsaEmRational(object):
 
     def iteration(self):
         if not self.issparse and self.itnum == 0:
-            dot(self.phi, self.theta, C=self.pwd)
+            dot(self.phi, self.theta, self.pwd)
 
         self.calc_multipliers()
 
@@ -159,7 +167,7 @@ class PlsaEmRational(object):
         np.putmask(self.theta, self.theta < 1e-18, 0)
 
         if not self.issparse:
-            dot(self.phi, self.theta, C=self.pwd)
+            dot(self.phi, self.theta, self.pwd)
 
     def iterate(self, maxiter, quiet=False):
         self.maxiter = maxiter
