@@ -1,5 +1,6 @@
 from time import time
 import numpy as np
+import ctypes as c
 import scipy.sparse
 import numexpr as ne
 from ipy_progressbar import ProgressBar
@@ -17,6 +18,46 @@ pyximport.install(
     }
 )
 import cython_support
+
+mkl = c.cdll.LoadLibrary("libmkl_rt.so")
+
+
+def dot(A, B, C=None):
+    assert A.shape[1] == B.shape[0]
+    if C is None:
+        C = np.empty((A.shape[0], B.shape[1]), dtype=np.float32)
+
+    Order = 101  # 101 for row-major, 102 for column major data structures
+    alpha = 1
+    beta = 0
+
+    m = A.shape[0]
+    k = A.shape[1]
+    n = B.shape[1]
+    ldc = n
+
+    if A.flags.c_contiguous:
+        TransA = 111 # 111 for no transpose, 112 for transpose, and 113 for conjugate transpose
+        lda = k
+    elif A.flags.f_contiguous:
+        TransA = 112
+        lda = m
+
+    if B.flags.c_contiguous:
+        TransB = 111 # 111 for no transpose, 112 for transpose, and 113 for conjugate transpose
+        ldb = n
+    elif B.flags.f_contiguous:
+        TransB = 112
+        ldb = k
+
+    mkl.cblas_sgemm( c.c_int(Order), c.c_int(TransA), c.c_int(TransB),
+                     c.c_int(m), c.c_int(n), c.c_int(k),
+                     c.c_float(alpha),
+                     A.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(lda),
+                     B.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(ldb),
+                     c.c_float(beta),
+                     C.ctypes.data_as(c.POINTER(c.c_float)), c.c_int(ldc) )
+    return C
 
 
 @public
@@ -78,8 +119,8 @@ class PlsaEmRational(object):
     def calc_multipliers(self):
         if not self.issparse:
             ne.evaluate('where(nwd * pwd > 0, nwd / pwd, 0)', out=self.npwd, local_dict={'nwd': self.nwd, 'pwd': self.pwd})
-            self.phi_sized = np.dot(self.npwd, self.theta.T)
-            self.theta_sized = np.dot(self.phi.T, self.npwd)
+            self.phi_sized = dot(self.npwd, self.theta.T)
+            self.theta_sized = dot(self.phi.T, self.npwd)
         else:
             self.phi_sized = np.empty_like(self.phi)
             self.theta_sized = np.empty_like(self.theta)
@@ -96,7 +137,7 @@ class PlsaEmRational(object):
 
     def iteration(self):
         if not self.issparse and self.itnum == 0:
-            np.dot(self.phi, self.theta, out=self.pwd)
+            dot(self.phi, self.theta, C=self.pwd)
 
         self.calc_multipliers()
 
@@ -118,7 +159,7 @@ class PlsaEmRational(object):
         np.putmask(self.theta, self.theta < 1e-18, 0)
 
         if not self.issparse:
-            np.dot(self.phi, self.theta, out=self.pwd)
+            dot(self.phi, self.theta, C=self.pwd)
 
     def iterate(self, maxiter, quiet=False):
         self.maxiter = maxiter
