@@ -192,7 +192,7 @@ class PlsaEmRational(object):
                 ] + [(k, v) for q in self.quantities for k, v in q.items(self)]
                 self.progress.append(progress_items)
 
-                pb.set_extra_text('; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_items[2:]]))
+                pb.set_extra_text('; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_items[2:] if np.isscalar(v)]))
                 if not quiet:
                     print '; '.join(['%s: %s' % (k.capitalize(), v) for k, v in progress_items])
 
