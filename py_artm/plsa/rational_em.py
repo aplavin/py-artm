@@ -169,9 +169,10 @@ class PlsaEmRational(object):
         if not self.issparse:
             dot(self.phi, self.theta, self.pwd)
 
-    def iterate(self, maxiter, quiet=False):
+    def iterate(self, maxiter, prefunc=lambda s: s, quiet=False):
         self.maxiter = maxiter
         self.generate_initial()
+        prefunc(self)
         try:
             pb = ProgressBar(range(maxiter), quiet=quiet >= 2, title='PLSA EM', key='plsa_em')
 
