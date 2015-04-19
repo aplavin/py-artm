@@ -62,6 +62,17 @@ else:
         return C
 
 
+# def dot(A, B, C=None):
+#     assert A.shape[1] == B.shape[0]
+#     if C is None:
+#         C = np.zeros((A.shape[0], B.shape[1]), dtype=np.float32)
+#     for i in range(A.shape[0]):
+#         for j in range(B.shape[1]):
+#             for k in range(A.shape[1]):
+#                 C[i, j] += A[i, k] * B[k, j]
+#     return C
+
+
 @public
 class PlsaEmRational(object):
 
