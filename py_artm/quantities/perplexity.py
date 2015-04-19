@@ -7,13 +7,7 @@ from ..utils import public
 
 try:
   import pyximport
-  pyximport.install(
-      setup_args={
-          'include_dirs': [np.get_include(), '/opt/intel/composer_xe_2015.0.090/mkl/include'],
-          'libraries': [('mkl_rt', {}), ('mkl_intel_lp64', {}), ('mkl_core', {}), ('mkl_intel_thread', {}), ('pthread', {}), ('iomp5', {})],
-          'library_dirs': ['/opt/intel/composer_xe_2015.0.090/mkl/lib/intel64'],
-      }
-  )
+  pyximport.install()
   import perplexity_cython
 except ImportError:
     warnings.warn('Could not import MKL-based code, computations with sparse matrices are disabled.')
