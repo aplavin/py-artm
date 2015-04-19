@@ -26,6 +26,6 @@ setup(name='py-artm',
       author='Alexander Plavin',
       author_email='alexander@plav.in',
       license='MIT',
-      packages=['py_artm', 'py_artm.plsa', 'py_artm.regularizers', 'py_artm.quantities', 'py_artm.stop_conditions'],
+      packages=['py_artm', 'py_artm.plsa', 'py_artm.regularizers', 'py_artm.regularizers.coefficients', 'py_artm.quantities', 'py_artm.stop_conditions'],
       install_requires=[ 'numpy', 'scipy', 'numexpr', 'ipy-progressbar' ],
       zip_safe=False)
