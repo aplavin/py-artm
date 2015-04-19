@@ -8,7 +8,7 @@ except (IOError, ImportError):
     long_description = ''
 
 setup(name='py-artm',
-      version='0.1',
+      version='0.1.1',
       description='',
       long_description = long_description,
       classifiers=[
