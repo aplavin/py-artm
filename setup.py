@@ -8,7 +8,7 @@ except (IOError, ImportError):
     long_description = ''
 
 setup(name='py-artm',
-      version='0.1.2',
+      version='0.3.2',
       description='',
       long_description = long_description,
       classifiers=[
@@ -27,5 +27,6 @@ setup(name='py-artm',
       author_email='alexander@plav.in',
       license='MIT',
       packages=['py_artm', 'py_artm.plsa', 'py_artm.regularizers', 'py_artm.regularizers.coefficients', 'py_artm.quantities', 'py_artm.stop_conditions'],
+      package_data={'py_artm': ['**/*.pyx', '**/*.pyxbld']},
       install_requires=[ 'numpy', 'scipy', 'numexpr', 'ipy-progressbar' ],
       zip_safe=False)

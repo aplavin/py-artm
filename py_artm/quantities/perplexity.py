@@ -5,12 +5,12 @@ import warnings
 from ..plsa import QuantityBase
 from ..utils import public
 
-try:
-  import pyximport
-  pyximport.install()
-  import perplexity_cython
-except ImportError:
-    warnings.warn('Could not import MKL-based code, computations with sparse matrices are disabled.')
+# try:
+import pyximport
+pyximport.install()
+import perplexity_cython
+# except ImportError:
+#     warnings.warn('Could not import MKL-based code, computations with sparse matrices are disabled.')
 
 
 @public

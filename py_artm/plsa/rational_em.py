@@ -10,12 +10,12 @@ from .quantity import QuantityBase
 from .stop_condition import StopConditionBase
 from ..utils import normalize, public
 
-try:
-    import pyximport
-    pyximport.install()
-    import cython_support
-except ImportError:
-    warnings.warn('Could not import MKL-based code, computations with sparse matrices are disabled.')
+# try:
+import pyximport
+pyximport.install()
+import cython_support
+# except ImportError:
+#     warnings.warn('Could not import MKL-based code, computations with sparse matrices are disabled.')
 
 
 try:
@@ -100,6 +100,8 @@ class PlsaEmRational(object):
         self.W, self.D = self.nwd.shape
         self.T_init = T_init
         self.issparse = scipy.sparse.issparse(self.nwd)
+        if self.issparse:
+            self.nwd_T = nwd.T.tocsr()
 
         def type_checker(t):
             return lambda obj: isinstance(obj, t)
@@ -110,6 +112,10 @@ class PlsaEmRational(object):
         self.progress = []
 
     def generate_initial(self):
+        if getattr(self, 'initialized', False):
+            return
+
+        self.initialized = True
         self.phi = np.random.random((self.W, self.T_init)).astype(np.float32)
         normalize(self.phi)
 
@@ -143,7 +149,7 @@ class PlsaEmRational(object):
                 theta=self.theta,
                 nwt_out=self.phi_sized)
             cython_support.calc_ntd(
-                ndw=self.nwd.T,
+                ndw=self.nwd_T,
                 phi=self.phi,
                 theta=self.theta,
                 ntd_out=self.theta_sized)

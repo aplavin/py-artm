@@ -1,23 +1,17 @@
-#cython: boundscheck=False, wraparound=False, embedsignature=True, cdivision=True
-import numpy as np
-cimport numpy as np
+#cython: boundscheck=False, wraparound=False, embedsignature=True, cdivision=True, initializedcheck=False
+import scipy.linalg.blas as blas
+from cpython cimport PyCObject_AsVoidPtr
 
+ctypedef float (*sdot_ptr) (const int *N, const float *X, const int *incX, const float *Y, const int *incY) nogil
+cdef sdot_ptr sdot=<sdot_ptr>PyCObject_AsVoidPtr(blas.sdot._cpointer)
 
-cdef extern from "mkl.h" nogil:
-    float cblas_sdot(int size,
-                     float *x, int xstride,
-                     float *y, int ystride)
+cdef inline float log(float val):
+    # return (<int*>&val)[0] * <float>8.2629582881927490e-8 - <float>87.989971088
+    cdef int vxi = (<int*>&val)[0]
+    cdef int mxi = (vxi & 0x007FFFFF) | 0x3f000000
+    cdef float mxf = (<float*>&mxi)[0]
 
-
-def perplexity_internal_cython(int n, float[:, :] pwd, float[:, :] nwd):
-    cdef int* pwd_ = <int*> &pwd[0, 0]
-    cdef float* nwd_ = &nwd[0, 0]
-    cdef float res = 0
-    cdef int i, j
-    for i in range(n):
-        res += nwd_[i] * (pwd_[i] * <float>8.2629582881927490e-8 - <float>87.989971088)
-    return res
-
+    return <float>8.2629582881927490234375e-8 * vxi - <float>86.1065653994 - <float>1.03835547939 * mxf - <float>1.19628884809 / (<float>0.3520887068 + mxf)
 
 def perplexity_sparse(nwd,
                       float[:, ::1] phi,
@@ -29,7 +23,6 @@ def perplexity_sparse(nwd,
 
     cdef int W = phi.shape[0]
     cdef int T = phi.shape[1]
-    cdef int D = theta.shape[1]
 
     cdef int w, i, d
     cdef int i_0, i_1
@@ -37,13 +30,15 @@ def perplexity_sparse(nwd,
     cdef float pwd_val
     cdef float result = 0
 
+    cdef int ix = 1
+
     for w in range(W):
         i_0 = nwd_indptr[w]
         i_1 = nwd_indptr[w + 1]
 
         for i in range(i_0, i_1):
             d = nwd_indices[i]
-            pwd_val = cblas_sdot(T, &phi[w, 0], 1, &theta[0, d], 1)
-            result += nwd_data[i] * ((<int*>&pwd_val)[0] * <float>8.2629582881927490e-8 - <float>87.989971088)
+            pwd_val = sdot(&T, &phi[w, 0], &ix, &theta[0, d], &ix)
+            result += nwd_data[i] * log(pwd_val)
 
     return result

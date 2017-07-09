@@ -1,17 +1,12 @@
-#cython: boundscheck=False, wraparound=False, embedsignature=True, cdivision=True
-import numpy as np
-cimport numpy as np
+#cython: boundscheck=False, wraparound=False, embedsignature=True, cdivision=True, initializedcheck=False
+import scipy.linalg.blas as blas
+from cpython cimport PyCObject_AsVoidPtr
 
+ctypedef void (*saxpy_ptr) (const int *N, const float *alpha, const float *X, const int *incX, float *Y, const int *incY) nogil
+cdef saxpy_ptr saxpy=<saxpy_ptr>PyCObject_AsVoidPtr(blas.saxpy._cpointer)
 
-cdef extern from "mkl.h" nogil:
-    float cblas_sdot(int size,
-                     float *x, int xstride,
-                     float *y, int ystride)
-
-    void cblas_saxpy(int size,
-                     float alpha,
-                     float *x, int xstride,
-                     float *y, int ystride)
+ctypedef float (*sdot_ptr) (const int *N, const float *X, const int *incX, const float *Y, const int *incY) nogil
+cdef sdot_ptr sdot=<sdot_ptr>PyCObject_AsVoidPtr(blas.sdot._cpointer)
 
 
 def calc_nwt(nwd,
@@ -31,6 +26,9 @@ def calc_nwt(nwd,
     cdef int i_0, i_1
     cdef float pwd_val
 
+    cdef int ix = 1
+    cdef float alpha
+
     for w in range(W):
         i_0 = nwd_indptr[w]
         i_1 = nwd_indptr[w + 1]
@@ -40,10 +38,12 @@ def calc_nwt(nwd,
 
         for i in range(i_0, i_1):
             d = nwd_indices[i]
-            pwd_val = cblas_sdot(T, &phi[w, 0], 1, &theta[0, d], 1)
+
+            pwd_val = sdot(&T, &phi[w, 0], &ix, &theta[0, d], &ix)
             if pwd_val == 0:
                 continue
-            cblas_saxpy(T, nwd_data[i] / pwd_val, &theta[0, d], 1, &nwt_out[w, 0], 1)
+            alpha = nwd_data[i] / pwd_val
+            saxpy(&T, &alpha, &theta[0, d], &ix, &nwt_out[w, 0], &ix)
 
 
 def calc_ntd(ndw,
@@ -63,6 +63,9 @@ def calc_ntd(ndw,
     cdef int i_0, i_1
     cdef float pwd_val
 
+    cdef int ix = 1
+    cdef float alpha
+
     for d in range(D):
         i_0 = ndw_indptr[d]
         i_1 = ndw_indptr[d + 1]
@@ -72,7 +75,8 @@ def calc_ntd(ndw,
 
         for i in range(i_0, i_1):
             w = ndw_indices[i]
-            pwd_val = cblas_sdot(T, &phi[w, 0], 1, &theta[0, d], 1)
+            pwd_val = sdot(&T, &phi[w, 0], &ix, &theta[0, d], &ix)
             if pwd_val == 0:
                 continue
-            cblas_saxpy(T, ndw_data[i] / pwd_val, &phi[w, 0], 1, &ntd_out[0, d], 1)
+            alpha = ndw_data[i] / pwd_val
+            saxpy(&T, &alpha, &phi[w, 0], &ix, &ntd_out[0, d], &ix)
